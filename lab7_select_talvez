@@ -1,0 +1,53 @@
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func exec(maxSleepMs int) int {
+	sleep := rand.Intn(maxSleepMs)
+	time.Sleep(time.Duration(sleep) * time.Millisecond)
+	return sleep
+}
+
+func producer(maxSleepMs int) <-chan int {
+	out := make(chan int)
+	go func() {
+		for i := 0; i < 1000; i++ {
+			out <- exec(maxSleepMs)
+		}
+		close(out)
+	}()
+	return out
+}
+
+func main() {
+	rand.Seed(42)
+
+	ch1 := producer(10)
+	ch2 := producer(10)
+
+	sum := 0
+	done1, done2 := false, false
+
+	for !(done1 && done2) {
+		select {
+		case v, ok := <-ch1:
+			if ok {
+				sum += v
+			} else {
+				done1 = true
+			}
+		case v, ok := <-ch2:
+			if ok {
+				sum += v
+			} else {
+				done2 = true
+			}
+		}
+	}
+
+	fmt.Println("Soma:", sum)
+}
