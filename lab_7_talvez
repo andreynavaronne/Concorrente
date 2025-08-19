@@ -1,0 +1,47 @@
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+// Função que dorme por um tempo aleatório até maxSleepMs e retorna esse valor
+func exec(maxSleepMs int) int {
+	sleep := rand.Intn(maxSleepMs) // sorteia entre 0 e maxSleepMs
+	time.Sleep(time.Duration(sleep) * time.Millisecond)
+	return sleep
+}
+
+// Função auxiliar que retorna um canal com 1000 valores produzidos por exec
+func producer(maxSleepMs int) <-chan int {
+	out := make(chan int)
+	go func() {
+		for i := 0; i < 1000; i++ {
+			out <- exec(maxSleepMs)
+		}
+		close(out)
+	}()
+	return out
+}
+
+func main() {
+	rand.Seed(42) // semente fixa para reprodutibilidade
+
+	// cria dois produtores
+	ch1 := producer(10)
+	ch2 := producer(10)
+
+	sum := 0
+
+	// consome do primeiro canal
+	for v := range ch1 {
+		sum += v
+	}
+	// depois consome do segundo
+	for v := range ch2 {
+		sum += v
+	}
+
+	fmt.Println("Soma:", sum)
+}
